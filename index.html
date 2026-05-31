@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>los834 — El reto de los municipios de Castilla-La Mancha</title>
+<meta name="description" content="¿Cuántos de los 834 municipios de Castilla-La Mancha recuerdas?">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #D6EAF8;
+  --bg2: #EBF5FB;
+  --card: #ffffff;
+  --ink: #1A2A3A;
+  --muted: #5A7A9A;
+  --border: #B3D0E8;
+  --found: #1A7A4F;
+  --found-light: #C8F0DC;
+  --danger: #B03A2E;
+  --ab: #A85832; --cr: #C0392B; --cu: #2471A3; --gu: #117A65; --to: #7D3C98;
+  --province-ab:#E8C5B0; --province-cr:#F5C6C3; --province-cu:#B9D9F0; --province-gu:#A8E6DC; --province-to:#DABFEA;
+  --province-ab-found:#B5651D; --province-cr-found:#C0392B; --province-cu-found:#1F618D; --province-gu-found:#0E6655; --province-to-found:#6C3483;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+.container{max-width:980px;margin:0 auto;padding:0 20px}
+
+/* HEADER */
+header{border-bottom:1.5px solid var(--border);padding:18px 0 14px;margin-bottom:24px}
+.header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.logo{font-family:'Playfair Display',serif;font-size:clamp(24px,5vw,40px);font-weight:700;letter-spacing:-1px;color:var(--ink);line-height:1}
+.logo span{color:var(--muted);font-weight:400;font-size:0.62em;margin-left:5px}
+.tagline{font-size:13px;color:var(--muted);font-weight:300}
+
+/* GAME LAYOUT */
+.game-layout{display:grid;grid-template-columns:300px 1fr;gap:22px;align-items:start}
+@media(max-width:700px){.game-layout{grid-template-columns:1fr}}
+.panel{display:flex;flex-direction:column;gap:13px}
+
+/* STAT CARDS */
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 13px;text-align:center}
+.stat-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.stat-value{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--ink);line-height:1}
+.stat-value.urgent{color:var(--danger)}
+.stat-total{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* INPUT */
+#muni-input{width:100%;font-family:'DM Sans',sans-serif;font-size:16px;padding:11px 15px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--ink);outline:none;transition:border-color .2s}
+#muni-input:focus{border-color:var(--ink)}
+#muni-input:disabled{background:#D0E8F5;cursor:not-allowed}
+
+.feedback{font-size:13px;min-height:20px;padding:0 2px;transition:color .3s}
+.feedback.ok{color:var(--found);font-weight:500}
+.feedback.err{color:var(--danger)}
+.feedback.hint{color:var(--muted)}
+
+/* BUTTONS */
+.btn{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;padding:10px 20px;border:1.5px solid var(--ink);border-radius:10px;background:var(--ink);color:#fff;cursor:pointer;transition:background .15s}
+.btn:hover{background:#2A3D50}
+.btn.secondary{background:transparent;color:var(--ink);border-color:var(--border)}
+.btn.secondary:hover{background:var(--bg)}
+.btn.sm{padding:7px 14px;font-size:13px;width:auto}
+
+/* PROVINCE BARS */
+.province-list{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.prov-row{display:flex;align-items:center;padding:8px 13px;border-bottom:1px solid #E3F0FA;font-size:13px;gap:8px}
+.prov-row:last-child{border-bottom:none}
+.prov-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.prov-name{flex:1}
+.prov-bar-wrap{width:70px;height:4px;background:#DFF0FA;border-radius:2px;overflow:hidden}
+.prov-bar{height:100%;border-radius:2px;transition:width .5s}
+.prov-count{min-width:44px;text-align:right;color:var(--muted);font-size:12px}
+
+/* FOUND TAGS */
+.section-title{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}
+.found-tags{display:flex;flex-wrap:wrap;gap:5px;max-height:110px;overflow-y:auto}
+.found-tag{font-size:11px;padding:3px 8px;border-radius:20px;background:var(--found-light);color:var(--found);font-weight:500;animation:tagPop .2s ease}
+@keyframes tagPop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* MAP */
+.map-container{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+#clm-map{width:100%;height:auto;display:block}
+.map-loading{padding:40px;text-align:center;color:var(--muted);font-size:14px}
+.map-legend{display:flex;flex-wrap:wrap;gap:10px;padding:9px 13px;border-top:1px solid var(--border);font-size:11px}
+.legend-item{display:flex;align-items:center;gap:5px;color:var(--muted)}
+.legend-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* ===== BOTTOM SECTIONS (leaderboard + stats) ===== */
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:32px}
+@media(max-width:700px){.bottom-grid{grid-template-columns:1fr}}
+
+.bottom-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.bottom-card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;border-bottom:1px solid var(--border)}
+.bottom-card-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+.bottom-card-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* LEADERBOARD TABLE */
+.lb-table{width:100%;border-collapse:collapse;font-size:13px}
+.lb-table th{text-align:left;padding:8px 18px;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;background:var(--bg2);border-bottom:1px solid var(--border)}
+.lb-table td{padding:9px 18px;border-bottom:1px solid #EBF5FB;vertical-align:middle}
+.lb-table tbody tr:last-child td{border-bottom:none}
+.lb-table tbody tr:hover td{background:#F0F8FF}
+.lb-table tbody tr.me td{background:#EAF7F0}
+.lb-rank{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--muted);width:32px}
+.lb-rank.gold{color:#C9A227}
+.lb-rank.silver{color:#888}
+.lb-rank.bronze{color:#A0522D}
+.lb-name{font-weight:500}
+.lb-score-cell{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--found);text-align:right}
+.lb-pct{color:var(--muted);font-size:11px;text-align:right}
+.lb-time-cell{color:var(--muted);font-size:11px;text-align:right}
+.lb-empty{padding:28px 18px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7}
+
+/* MUNICIPALITY STATS */
+.muni-stat-list{padding:6px 0}
+.muni-stat-row{display:flex;align-items:center;gap:10px;padding:7px 18px;border-bottom:1px solid #EBF5FB;font-size:13px}
+.muni-stat-row:last-child{border-bottom:none}
+.muni-stat-rank{width:22px;font-size:11px;font-weight:500;color:var(--muted);text-align:center;flex-shrink:0}
+.muni-stat-name{flex:1;font-weight:400}
+.muni-stat-bar-wrap{width:80px;height:5px;background:#DFF0FA;border-radius:3px;overflow:hidden}
+.muni-stat-bar{height:100%;border-radius:3px;background:var(--cu);transition:width .6s}
+.muni-stat-count{min-width:28px;text-align:right;font-size:12px;font-weight:500;color:var(--ink)}
+.muni-stat-prov{font-size:10px;color:var(--muted);min-width:20px}
+
+/* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(10,30,50,.65);z-index:100;align-items:center;justify-content:center;padding:20px}
+.overlay.active{display:flex}
+.modal{background:var(--card);border-radius:16px;padding:34px 40px;text-align:center;max-width:460px;width:100%;border:1.5px solid var(--border)}
+@media(max-width:500px){.modal{padding:22px 18px}}
+
+/* START */
+.start-logo{font-family:'Playfair Display',serif;font-size:54px;font-weight:700;letter-spacing:-2px;color:var(--ink);margin-bottom:4px}
+.start-tagline{color:var(--muted);font-size:14px;margin-bottom:20px;line-height:1.5}
+.start-rules{text-align:left;font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:18px;padding:13px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
+.start-rules strong{color:var(--ink);font-weight:500}
+.name-row{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;text-align:left}
+.name-row label{font-size:13px;font-weight:500;color:var(--ink)}
+.name-row input{font-family:'DM Sans',sans-serif;font-size:15px;padding:9px 13px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);color:var(--ink);outline:none}
+.name-row input:focus{border-color:var(--ink)}
+.time-label{font-size:12px;color:var(--muted);margin-bottom:7px;text-align:left;font-weight:500}
+.time-options{display:flex;gap:7px;margin-bottom:18px}
+.time-btn{flex:1;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:8px 4px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);color:var(--muted);cursor:pointer;transition:all .15s}
+.time-btn.selected{border-color:var(--ink);background:var(--ink);color:#fff}
+.time-btn:hover:not(.selected){border-color:var(--muted);color:var(--ink)}
+
+/* END */
+.end-emoji{font-size:46px;margin-bottom:10px}
+.end-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:6px}
+.end-score{font-size:52px;font-family:'Playfair Display',serif;font-weight:700;color:var(--found);line-height:1;margin:10px 0 3px}
+.end-subtitle{color:var(--muted);font-size:13px;margin-bottom:18px}
+.end-breakdown{display:flex;flex-direction:column;gap:5px;margin-bottom:18px;text-align:left;font-size:13px}
+.end-prov-row{display:flex;align-items:center;gap:9px;padding:6px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border)}
+.end-prov-name{flex:1}
+.end-prov-stat{color:var(--muted);font-size:12px}
+.end-btns{display:flex;flex-direction:column;gap:8px}
+
+footer{text-align:center;padding:28px 20px;font-size:12px;color:var(--border);margin-top:36px;border-top:1px solid var(--border)}
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<!-- START OVERLAY -->
+<div class="overlay active" id="start-overlay">
+  <div class="modal">
+    <div class="start-logo">los834</div>
+    <p class="start-tagline">¿Cuántos municipios de Castilla-La Mancha recuerdas?<br>Escribe el máximo antes de que se acabe el tiempo.</p>
+    <div class="name-row">
+      <label for="player-name">Tu nombre (para el ranking)</label>
+      <input type="text" id="player-name" placeholder="Ej: María" maxlength="24" autocomplete="off" />
+    </div>
+    <div class="time-label">Elige el tiempo</div>
+    <div class="time-options">
+      <button class="time-btn" data-secs="600" onclick="selectTime(this)">10 min</button>
+      <button class="time-btn selected" data-secs="900" onclick="selectTime(this)">15 min</button>
+      <button class="time-btn" data-secs="1200" onclick="selectTime(this)">20 min</button>
+      <button class="time-btn" data-secs="1800" onclick="selectTime(this)">30 min</button>
+      <button class="time-btn" data-secs="0" onclick="selectTime(this)">&#8734;</button>
+    </div>
+    <div class="start-rules">
+      <strong>Cómo jugar:</strong><br>
+      Escribe municipios de las 5 provincias de CLM. Si aciertas aparece en el mapa. Los acentos y mayúsculas son opcionales.
+    </div>
+    <button class="btn" onclick="startGame()">Empezar el reto &#8594;</button>
+  </div>
+</div>
+
+<!-- END OVERLAY -->
+<div class="overlay" id="end-overlay">
+  <div class="modal">
+    <div class="end-emoji" id="end-emoji">🏰</div>
+    <div class="end-title" id="end-title">¡Tiempo!</div>
+    <div class="end-score" id="end-score">0</div>
+    <div class="end-subtitle" id="end-subtitle"></div>
+    <div class="end-breakdown" id="end-breakdown"></div>
+    <div class="end-btns">
+      <button class="btn" onclick="closeEnd()">Ver el ranking &#8595;</button>
+      <button class="btn secondary" onclick="restartGame()">Jugar de nuevo</button>
+      <button class="btn secondary" onclick="showMissed()">Ver los que faltaban</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <header>
+    <div class="header-inner">
+      <div class="logo">los834 <span>CLM</span></div>
+      <div class="tagline">El reto de los municipios de Castilla-La Mancha</div>
+    </div>
+  </header>
+
+  <!-- GAME -->
+  <div class="game-layout">
+    <div class="panel">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Encontrados</div>
+          <div class="stat-value" id="stat-found">0</div>
+          <div class="stat-total">de <span id="stat-total">834</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tiempo</div>
+          <div class="stat-value" id="stat-time">—</div>
+        </div>
+      </div>
+
+      <input type="text" id="muni-input" placeholder="Escribe un municipio…"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" disabled />
+      <div class="feedback hint" id="feedback">Configura la partida para comenzar</div>
+      <button class="btn secondary" id="btn-action" onclick="giveUp()">Rendirse</button>
+
+      <div class="province-list">
+        <div class="prov-row"><div class="prov-dot" style="background:var(--ab)"></div><div class="prov-name">Albacete</div><div class="prov-bar-wrap"><div class="prov-bar" id="bar-ab" style="background:var(--ab);width:0%"></div></div><div class="prov-count"><span id="cnt-ab">0</span>/83</div></div>
+        <div class="prov-row"><div class="prov-dot" style="background:var(--cr)"></div><div class="prov-name">Ciudad Real</div><div class="prov-bar-wrap"><div class="prov-bar" id="bar-cr" style="background:var(--cr);width:0%"></div></div><div class="prov-count"><span id="cnt-cr">0</span>/94</div></div>
+        <div class="prov-row"><div class="prov-dot" style="background:var(--cu)"></div><div class="prov-name">Cuenca</div><div class="prov-bar-wrap"><div class="prov-bar" id="bar-cu" style="background:var(--cu);width:0%"></div></div><div class="prov-count"><span id="cnt-cu">0</span>/210</div></div>
+        <div class="prov-row"><div class="prov-dot" style="background:var(--gu)"></div><div class="prov-name">Guadalajara</div><div class="prov-bar-wrap"><div class="prov-bar" id="bar-gu" style="background:var(--gu);width:0%"></div></div><div class="prov-count"><span id="cnt-gu">0</span>/278</div></div>
+        <div class="prov-row"><div class="prov-dot" style="background:var(--to)"></div><div class="prov-name">Toledo</div><div class="prov-bar-wrap"><div class="prov-bar" id="bar-to" style="background:var(--to);width:0%"></div></div><div class="prov-count"><span id="cnt-to">0</span>/169</div></div>
+      </div>
+
+      <div>
+        <div class="section-title">Últimos encontrados</div>
+        <div class="found-tags" id="found-tags"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="map-container">
+        <div class="map-loading" id="map-loading">Cargando el mapa…</div>
+        <svg id="clm-map" viewBox="0 0 600 400" style="display:none"></svg>
+        <div class="map-legend">
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--province-ab)"></div>Albacete</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--province-cr)"></div>Ciudad Real</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--province-cu)"></div>Cuenca</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--province-gu)"></div>Guadalajara</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--province-to)"></div>Toledo</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--found)"></div>Encontrado</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM SECTIONS -->
+  <div class="bottom-grid" id="bottom-sections">
+
+    <!-- LEADERBOARD -->
+    <div class="bottom-card">
+      <div class="bottom-card-header">
+        <div>
+          <div class="bottom-card-title">&#127942; Ranking</div>
+          <div class="bottom-card-sub">Mejores puntuaciones guardadas</div>
+        </div>
+        <button class="btn secondary sm" onclick="clearLeaderboard()">Borrar</button>
+      </div>
+      <div id="lb-content">
+        <div class="lb-empty">Aún no hay puntuaciones.<br>¡Juega para aparecer aquí!</div>
+      </div>
+    </div>
+
+    <!-- MUNICIPALITY STATS -->
+    <div class="bottom-card">
+      <div class="bottom-card-header">
+        <div>
+          <div class="bottom-card-title">&#128202; Municipios más adivinados</div>
+          <div class="bottom-card-sub">En todas las partidas guardadas</div>
+        </div>
+        <div id="stats-sessions" style="font-size:11px;color:var(--muted)"></div>
+      </div>
+      <div id="muni-stats-content">
+        <div class="lb-empty">Juega para ver las estadísticas</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    Inspirado en <a href="https://els947.cat" target="_blank" rel="noopener">els947.cat</a> &middot; Datos: INE Nomenclátor 2023 &middot; Mapa: es-atlas / IGN
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+const MUNICIPALITIES = [{"n":"Abengibre","p":"Albacete","c":"AB"},{"n":"Alatoz","p":"Albacete","c":"AB"},{"n":"Albacete","p":"Albacete","c":"AB"},{"n":"Alcadozo","p":"Albacete","c":"AB"},{"n":"Alcalá del Júcar","p":"Albacete","c":"AB"},{"n":"Alcaraz","p":"Albacete","c":"AB"},{"n":"Almansa","p":"Albacete","c":"AB"},{"n":"Alpera","p":"Albacete","c":"AB"},{"n":"Ayna","p":"Albacete","c":"AB"},{"n":"Balazote","p":"Albacete","c":"AB"},{"n":"Ballestero (El)","p":"Albacete","c":"AB"},{"n":"Balsa de Ves","p":"Albacete","c":"AB"},{"n":"Barrax","p":"Albacete","c":"AB"},{"n":"Bienservida","p":"Albacete","c":"AB"},{"n":"Bogarra","p":"Albacete","c":"AB"},{"n":"Bonete","p":"Albacete","c":"AB"},{"n":"Bonillo (El)","p":"Albacete","c":"AB"},{"n":"Casas de Juan Núñez","p":"Albacete","c":"AB"},{"n":"Casas de Lázaro","p":"Albacete","c":"AB"},{"n":"Casas de Ves","p":"Albacete","c":"AB"},{"n":"Casas-Ibáñez","p":"Albacete","c":"AB"},{"n":"Caudete","p":"Albacete","c":"AB"},{"n":"Cenizate","p":"Albacete","c":"AB"},{"n":"Chinchilla de Monte-Aragón","p":"Albacete","c":"AB"},{"n":"Corral-Rubio","p":"Albacete","c":"AB"},{"n":"Cotillas","p":"Albacete","c":"AB"},{"n":"Elche de la Sierra","p":"Albacete","c":"AB"},{"n":"Férez","p":"Albacete","c":"AB"},{"n":"Fuensanta","p":"Albacete","c":"AB"},{"n":"Fuente-Álamo","p":"Albacete","c":"AB"},{"n":"Fuentealbilla","p":"Albacete","c":"AB"},{"n":"Gineta (La)","p":"Albacete","c":"AB"},{"n":"Golosalvo","p":"Albacete","c":"AB"},{"n":"Hellín","p":"Albacete","c":"AB"},{"n":"Herrera (La)","p":"Albacete","c":"AB"},{"n":"Higueruela","p":"Albacete","c":"AB"},{"n":"Hoya-Gonzalo","p":"Albacete","c":"AB"},{"n":"Jorquera","p":"Albacete","c":"AB"},{"n":"Letur","p":"Albacete","c":"AB"},{"n":"Lezuza","p":"Albacete","c":"AB"},{"n":"Liétor","p":"Albacete","c":"AB"},{"n":"Madrigueras","p":"Albacete","c":"AB"},{"n":"Mahora","p":"Albacete","c":"AB"},{"n":"Masegoso","p":"Albacete","c":"AB"},{"n":"Minaya","p":"Albacete","c":"AB"},{"n":"Molinicos","p":"Albacete","c":"AB"},{"n":"Montalvos","p":"Albacete","c":"AB"},{"n":"Montealegre del Castillo","p":"Albacete","c":"AB"},{"n":"Munera","p":"Albacete","c":"AB"},{"n":"Navas de Jorquera","p":"Albacete","c":"AB"},{"n":"Nerpio","p":"Albacete","c":"AB"},{"n":"Ontur","p":"Albacete","c":"AB"},{"n":"Ossa de Montiel","p":"Albacete","c":"AB"},{"n":"Paterna del Madera","p":"Albacete","c":"AB"},{"n":"Peñas de San Pedro","p":"Albacete","c":"AB"},{"n":"Peñascosa","p":"Albacete","c":"AB"},{"n":"Pétrola","p":"Albacete","c":"AB"},{"n":"Povedilla","p":"Albacete","c":"AB"},{"n":"Pozo Cañada","p":"Albacete","c":"AB"},{"n":"Pozo-Lorente","p":"Albacete","c":"AB"},{"n":"Pozohondo","p":"Albacete","c":"AB"},{"n":"Pozorrubielos de la Mancha","p":"Albacete","c":"AB"},{"n":"Pozuelo","p":"Albacete","c":"AB"},{"n":"Recueja (La)","p":"Albacete","c":"AB"},{"n":"Riópar","p":"Albacete","c":"AB"},{"n":"Robledo","p":"Albacete","c":"AB"},{"n":"Salobre","p":"Albacete","c":"AB"},{"n":"San Pedro","p":"Albacete","c":"AB"},{"n":"Socovos","p":"Albacete","c":"AB"},{"n":"Tarazona de la Mancha","p":"Albacete","c":"AB"},{"n":"Tobarra","p":"Albacete","c":"AB"},{"n":"Valdeganga","p":"Albacete","c":"AB"},{"n":"Vianos","p":"Albacete","c":"AB"},{"n":"Villa de Ves","p":"Albacete","c":"AB"},{"n":"Villalgordo del Júcar","p":"Albacete","c":"AB"},{"n":"Villamalea","p":"Albacete","c":"AB"},{"n":"Villapalacios","p":"Albacete","c":"AB"},{"n":"Villarobledo","p":"Albacete","c":"AB"},{"n":"Villatoya","p":"Albacete","c":"AB"},{"n":"Villavaliente","p":"Albacete","c":"AB"},{"n":"Viveros","p":"Albacete","c":"AB"},{"n":"Yeste","p":"Albacete","c":"AB"},{"n":"Agra","p":"Albacete","c":"AB"},{"n":"Abenójar","p":"Ciudad Real","c":"CR"},{"n":"Agudo","p":"Ciudad Real","c":"CR"},{"n":"Alamillo","p":"Ciudad Real","c":"CR"},{"n":"Albaladejo","p":"Ciudad Real","c":"CR"},{"n":"Alcázar de San Juan","p":"Ciudad Real","c":"CR"},{"n":"Alcoba","p":"Ciudad Real","c":"CR"},{"n":"Alcolea de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Aldea del Rey","p":"Ciudad Real","c":"CR"},{"n":"Alhambra","p":"Ciudad Real","c":"CR"},{"n":"Almadén","p":"Ciudad Real","c":"CR"},{"n":"Almadenejos","p":"Ciudad Real","c":"CR"},{"n":"Almagro","p":"Ciudad Real","c":"CR"},{"n":"Almodóvar del Campo","p":"Ciudad Real","c":"CR"},{"n":"Almuradiel","p":"Ciudad Real","c":"CR"},{"n":"Anchuras","p":"Ciudad Real","c":"CR"},{"n":"Arenas de San Juan","p":"Ciudad Real","c":"CR"},{"n":"Arenales de San Gregorio","p":"Ciudad Real","c":"CR"},{"n":"Argamasilla de Alba","p":"Ciudad Real","c":"CR"},{"n":"Argamasilla de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Arroba de los Montes","p":"Ciudad Real","c":"CR"},{"n":"Ballesteros de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Bolaños de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Brazatortas","p":"Ciudad Real","c":"CR"},{"n":"Cabezarados","p":"Ciudad Real","c":"CR"},{"n":"Cabezarrubias del Puerto","p":"Ciudad Real","c":"CR"},{"n":"Calzada de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Campo de Criptana","p":"Ciudad Real","c":"CR"},{"n":"Caracuel de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Carrión de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Castellar de Santiago","p":"Ciudad Real","c":"CR"},{"n":"Chillón","p":"Ciudad Real","c":"CR"},{"n":"Ciudad Real","p":"Ciudad Real","c":"CR"},{"n":"Corral de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Cortijos (Los)","p":"Ciudad Real","c":"CR"},{"n":"Cózar","p":"Ciudad Real","c":"CR"},{"n":"Daimiel","p":"Ciudad Real","c":"CR"},{"n":"Fernán Caballero","p":"Ciudad Real","c":"CR"},{"n":"Fontanarejo","p":"Ciudad Real","c":"CR"},{"n":"Fuencaliente","p":"Ciudad Real","c":"CR"},{"n":"Fuenllana","p":"Ciudad Real","c":"CR"},{"n":"Fuente el Fresno","p":"Ciudad Real","c":"CR"},{"n":"Granátula de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Guadalmez","p":"Ciudad Real","c":"CR"},{"n":"Herencia","p":"Ciudad Real","c":"CR"},{"n":"Hinojosas de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Horcajo de los Montes","p":"Ciudad Real","c":"CR"},{"n":"Labores (Las)","p":"Ciudad Real","c":"CR"},{"n":"Llanos del Caudillo","p":"Ciudad Real","c":"CR"},{"n":"Luciana","p":"Ciudad Real","c":"CR"},{"n":"Malagón","p":"Ciudad Real","c":"CR"},{"n":"Manzanares","p":"Ciudad Real","c":"CR"},{"n":"Membrilla","p":"Ciudad Real","c":"CR"},{"n":"Mestanza","p":"Ciudad Real","c":"CR"},{"n":"Miguelturra","p":"Ciudad Real","c":"CR"},{"n":"Montiel","p":"Ciudad Real","c":"CR"},{"n":"Moral de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Navalpino","p":"Ciudad Real","c":"CR"},{"n":"Navas de Estena","p":"Ciudad Real","c":"CR"},{"n":"Pedro Muñoz","p":"Ciudad Real","c":"CR"},{"n":"Picón","p":"Ciudad Real","c":"CR"},{"n":"Piedrabuena","p":"Ciudad Real","c":"CR"},{"n":"Poblete","p":"Ciudad Real","c":"CR"},{"n":"Porzuna","p":"Ciudad Real","c":"CR"},{"n":"Pozuelo de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Puerto Lápice","p":"Ciudad Real","c":"CR"},{"n":"Puertollano","p":"Ciudad Real","c":"CR"},{"n":"Retuerta del Bullaque","p":"Ciudad Real","c":"CR"},{"n":"Ruidera","p":"Ciudad Real","c":"CR"},{"n":"Saceruela","p":"Ciudad Real","c":"CR"},{"n":"San Carlos del Valle","p":"Ciudad Real","c":"CR"},{"n":"San Lorenzo de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Santa Cruz de los Cáñamos","p":"Ciudad Real","c":"CR"},{"n":"Santa Cruz de Mudela","p":"Ciudad Real","c":"CR"},{"n":"Socuéllamos","p":"Ciudad Real","c":"CR"},{"n":"Solana (La)","p":"Ciudad Real","c":"CR"},{"n":"Terrinches","p":"Ciudad Real","c":"CR"},{"n":"Tomelloso","p":"Ciudad Real","c":"CR"},{"n":"Torralba de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Torre de Juan Abad","p":"Ciudad Real","c":"CR"},{"n":"Torrenueva","p":"Ciudad Real","c":"CR"},{"n":"Valdemanco del Esteras","p":"Ciudad Real","c":"CR"},{"n":"Valdepeñas","p":"Ciudad Real","c":"CR"},{"n":"Valenzuela de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Villahermosa","p":"Ciudad Real","c":"CR"},{"n":"Villamanrique","p":"Ciudad Real","c":"CR"},{"n":"Villamayor de Calatrava","p":"Ciudad Real","c":"CR"},{"n":"Villanueva de la Fuente","p":"Ciudad Real","c":"CR"},{"n":"Villanueva de los Infantes","p":"Ciudad Real","c":"CR"},{"n":"Villanueva de San Carlos","p":"Ciudad Real","c":"CR"},{"n":"Villar del Pozo","p":"Ciudad Real","c":"CR"},{"n":"Villarrubia de los Ojos","p":"Ciudad Real","c":"CR"},{"n":"Villarta de San Juan","p":"Ciudad Real","c":"CR"},{"n":"Viso del Marqués","p":"Ciudad Real","c":"CR"},{"n":"Pías","p":"Ciudad Real","c":"CR"},{"n":"Abia de la Obispalía","p":"Cuenca","c":"CU"},{"n":"Acebrón (El)","p":"Cuenca","c":"CU"},{"n":"Alarcón","p":"Cuenca","c":"CU"},{"n":"Albaladejo del Cuende","p":"Cuenca","c":"CU"},{"n":"Albalate de las Nogueras","p":"Cuenca","c":"CU"},{"n":"Albendea","p":"Cuenca","c":"CU"},{"n":"Alberca de Záncara","p":"Cuenca","c":"CU"},{"n":"Alcalá de la Vega","p":"Cuenca","c":"CU"},{"n":"Alcántara del Júcar","p":"Cuenca","c":"CU"},{"n":"Alconchel de la Estrella","p":"Cuenca","c":"CU"},{"n":"Alcohujate","p":"Cuenca","c":"CU"},{"n":"Aldeanueva de la Cruz","p":"Cuenca","c":"CU"},{"n":"Aliaguilla","p":"Cuenca","c":"CU"},{"n":"Almarcha (La)","p":"Cuenca","c":"CU"},{"n":"Almendros","p":"Cuenca","c":"CU"},{"n":"Almodóvar del Pinar","p":"Cuenca","c":"CU"},{"n":"Almonacid del Marquesado","p":"Cuenca","c":"CU"},{"n":"Altarejos","p":"Cuenca","c":"CU"},{"n":"Arandilla del Arroyo","p":"Cuenca","c":"CU"},{"n":"Arcos de la Sierra","p":"Cuenca","c":"CU"},{"n":"Arcas","p":"Cuenca","c":"CU"},{"n":"Arcos de la Cantera","p":"Cuenca","c":"CU"},{"n":"Arguisuelas","p":"Cuenca","c":"CU"},{"n":"Arrancacepas","p":"Cuenca","c":"CU"},{"n":"Atalaya del Cañavate","p":"Cuenca","c":"CU"},{"n":"Barchín del Hoyo","p":"Cuenca","c":"CU"},{"n":"Bascuñana de San Pedro","p":"Cuenca","c":"CU"},{"n":"Beamud","p":"Cuenca","c":"CU"},{"n":"Belinchón","p":"Cuenca","c":"CU"},{"n":"Belmonte","p":"Cuenca","c":"CU"},{"n":"Belmontejo","p":"Cuenca","c":"CU"},{"n":"Beteta","p":"Cuenca","c":"CU"},{"n":"Boniches","p":"Cuenca","c":"CU"},{"n":"Buciegas","p":"Cuenca","c":"CU"},{"n":"Buenache de Alarcón","p":"Cuenca","c":"CU"},{"n":"Buenache de la Sierra","p":"Cuenca","c":"CU"},{"n":"Buendía","p":"Cuenca","c":"CU"},{"n":"Campillo de Altobuey","p":"Cuenca","c":"CU"},{"n":"Campillos-Paravientos","p":"Cuenca","c":"CU"},{"n":"Campillos-Sierra","p":"Cuenca","c":"CU"},{"n":"Cañada del Hoyo","p":"Cuenca","c":"CU"},{"n":"Cañada Juncosa","p":"Cuenca","c":"CU"},{"n":"Cañamares","p":"Cuenca","c":"CU"},{"n":"Cañavate (El)","p":"Cuenca","c":"CU"},{"n":"Cañaveruelas","p":"Cuenca","c":"CU"},{"n":"Cañete","p":"Cuenca","c":"CU"},{"n":"Cañizares","p":"Cuenca","c":"CU"},{"n":"Carboneras de Guadazaón","p":"Cuenca","c":"CU"},{"n":"Cardenete","p":"Cuenca","c":"CU"},{"n":"Casas de Benítez","p":"Cuenca","c":"CU"},{"n":"Casas de Fernando Alonso","p":"Cuenca","c":"CU"},{"n":"Casas de Garcimolina","p":"Cuenca","c":"CU"},{"n":"Casas de Guijarro","p":"Cuenca","c":"CU"},{"n":"Casas de Haro","p":"Cuenca","c":"CU"},{"n":"Casas de los Pinos","p":"Cuenca","c":"CU"},{"n":"Casas de Santa Cruz","p":"Cuenca","c":"CU"},{"n":"Casasimarro","p":"Cuenca","c":"CU"},{"n":"Castejón","p":"Cuenca","c":"CU"},{"n":"Castillejo de Iniesta","p":"Cuenca","c":"CU"},{"n":"Castillejo-Sierra","p":"Cuenca","c":"CU"},{"n":"Castillo-Albaráñez","p":"Cuenca","c":"CU"},{"n":"Castillo de Garcimuñoz","p":"Cuenca","c":"CU"},{"n":"Cervera del Llano","p":"Cuenca","c":"CU"},{"n":"Chillarón de Cuenca","p":"Cuenca","c":"CU"},{"n":"Chumillas","p":"Cuenca","c":"CU"},{"n":"Cuenca","p":"Cuenca","c":"CU"},{"n":"Cueva del Hierro","p":"Cuenca","c":"CU"},{"n":"Enguidanos","p":"Cuenca","c":"CU"},{"n":"Fresneda de Altarejos","p":"Cuenca","c":"CU"},{"n":"Fresneda de la Sierra","p":"Cuenca","c":"CU"},{"n":"Frontera (La)","p":"Cuenca","c":"CU"},{"n":"Fuente de Pedro Naharro","p":"Cuenca","c":"CU"},{"n":"Fuentes","p":"Cuenca","c":"CU"},{"n":"Fuentesclaras de Chillarón","p":"Cuenca","c":"CU"},{"n":"Fuertescusa","p":"Cuenca","c":"CU"},{"n":"Garaballa","p":"Cuenca","c":"CU"},{"n":"Garcinarro","p":"Cuenca","c":"CU"},{"n":"Graja de Campalbo","p":"Cuenca","c":"CU"},{"n":"Graja de Iniesta","p":"Cuenca","c":"CU"},{"n":"Henarejos","p":"Cuenca","c":"CU"},{"n":"Hinojosa (La)","p":"Cuenca","c":"CU"},{"n":"Hinojosos (Los)","p":"Cuenca","c":"CU"},{"n":"Horcajada de la Torre","p":"Cuenca","c":"CU"},{"n":"Horcajo de la Sierra","p":"Cuenca","c":"CU"},{"n":"Huelves","p":"Cuenca","c":"CU"},{"n":"Huerta de la Obispalía","p":"Cuenca","c":"CU"},{"n":"Huerta del Marquesado","p":"Cuenca","c":"CU"},{"n":"Huete","p":"Cuenca","c":"CU"},{"n":"Iniesta","p":"Cuenca","c":"CU"},{"n":"Laguna del Marquesado","p":"Cuenca","c":"CU"},{"n":"Lagunaseca","p":"Cuenca","c":"CU"},{"n":"Landete","p":"Cuenca","c":"CU"},{"n":"Ledaña","p":"Cuenca","c":"CU"},{"n":"Leganiel","p":"Cuenca","c":"CU"},{"n":"Majadas (Las)","p":"Cuenca","c":"CU"},{"n":"Mariana","p":"Cuenca","c":"CU"},{"n":"Masegosa","p":"Cuenca","c":"CU"},{"n":"Mesas (Las)","p":"Cuenca","c":"CU"},{"n":"Minglanilla","p":"Cuenca","c":"CU"},{"n":"Mira","p":"Cuenca","c":"CU"},{"n":"Monreal del Llano","p":"Cuenca","c":"CU"},{"n":"Montalbanejo","p":"Cuenca","c":"CU"},{"n":"Montalbo","p":"Cuenca","c":"CU"},{"n":"Monteagudo de las Salinas","p":"Cuenca","c":"CU"},{"n":"Mota de Altarejos","p":"Cuenca","c":"CU"},{"n":"Mota del Cuervo","p":"Cuenca","c":"CU"},{"n":"Motilla del Palancar","p":"Cuenca","c":"CU"},{"n":"Moya","p":"Cuenca","c":"CU"},{"n":"Narboneta","p":"Cuenca","c":"CU"},{"n":"Olivares de Júcar","p":"Cuenca","c":"CU"},{"n":"Olmeda de la Cuesta","p":"Cuenca","c":"CU"},{"n":"Olmeda del Rey","p":"Cuenca","c":"CU"},{"n":"Olmedilla de Alarcón","p":"Cuenca","c":"CU"},{"n":"Olmedilla de Eliz","p":"Cuenca","c":"CU"},{"n":"Osa de la Vega","p":"Cuenca","c":"CU"},{"n":"Pajaroncillo","p":"Cuenca","c":"CU"},{"n":"Pajarón","p":"Cuenca","c":"CU"},{"n":"Palomares del Campo","p":"Cuenca","c":"CU"},{"n":"Palomera","p":"Cuenca","c":"CU"},{"n":"Paracuellos","p":"Cuenca","c":"CU"},{"n":"Paredes","p":"Cuenca","c":"CU"},{"n":"Pedernoso (El)","p":"Cuenca","c":"CU"},{"n":"Pedroñeras (Las)","p":"Cuenca","c":"CU"},{"n":"Peral (El)","p":"Cuenca","c":"CU"},{"n":"Peraleja (La)","p":"Cuenca","c":"CU"},{"n":"Picazo (El)","p":"Cuenca","c":"CU"},{"n":"Pinarejo","p":"Cuenca","c":"CU"},{"n":"Pineda de Gigüela","p":"Cuenca","c":"CU"},{"n":"Piqueras del Castillo","p":"Cuenca","c":"CU"},{"n":"Portalrubio de Guadamejud","p":"Cuenca","c":"CU"},{"n":"Portilla","p":"Cuenca","c":"CU"},{"n":"Pozuelo (El)","p":"Cuenca","c":"CU"},{"n":"Priego","p":"Cuenca","c":"CU"},{"n":"Provencio (El)","p":"Cuenca","c":"CU"},{"n":"Puebla de Almenara","p":"Cuenca","c":"CU"},{"n":"Puebla del Salvador","p":"Cuenca","c":"CU"},{"n":"Quintanar del Rey","p":"Cuenca","c":"CU"},{"n":"Rada de Haro","p":"Cuenca","c":"CU"},{"n":"Reíllo","p":"Cuenca","c":"CU"},{"n":"Rozalén del Monte","p":"Cuenca","c":"CU"},{"n":"Saceda-Trasierra","p":"Cuenca","c":"CU"},{"n":"Saelices","p":"Cuenca","c":"CU"},{"n":"Salinas del Manzano","p":"Cuenca","c":"CU"},{"n":"Salmeroncillos","p":"Cuenca","c":"CU"},{"n":"Salvacañete","p":"Cuenca","c":"CU"},{"n":"San Clemente","p":"Cuenca","c":"CU"},{"n":"San Lorenzo de la Parrilla","p":"Cuenca","c":"CU"},{"n":"San Martín de Boniches","p":"Cuenca","c":"CU"},{"n":"San Pedro Palmiches","p":"Cuenca","c":"CU"},{"n":"Santa Cruz de Moya","p":"Cuenca","c":"CU"},{"n":"Santa María de los Llanos","p":"Cuenca","c":"CU"},{"n":"Santa María del Campo Rus","p":"Cuenca","c":"CU"},{"n":"Santa María del Val","p":"Cuenca","c":"CU"},{"n":"Sisante","p":"Cuenca","c":"CU"},{"n":"Solera de Gabaldón","p":"Cuenca","c":"CU"},{"n":"Sotorribas","p":"Cuenca","c":"CU"},{"n":"Talayuelas","p":"Cuenca","c":"CU"},{"n":"Tarancón","p":"Cuenca","c":"CU"},{"n":"Tinajas","p":"Cuenca","c":"CU"},{"n":"Torralba","p":"Cuenca","c":"CU"},{"n":"Torrejoncillo del Rey","p":"Cuenca","c":"CU"},{"n":"Torrubia del Campo","p":"Cuenca","c":"CU"},{"n":"Torrubia del Castillo","p":"Cuenca","c":"CU"},{"n":"Tragacete","p":"Cuenca","c":"CU"},{"n":"Tresjuncos","p":"Cuenca","c":"CU"},{"n":"Tribaldos","p":"Cuenca","c":"CU"},{"n":"Uclés","p":"Cuenca","c":"CU"},{"n":"Uña","p":"Cuenca","c":"CU"},{"n":"Valdecolmenas","p":"Cuenca","c":"CU"},{"n":"Valdemeca","p":"Cuenca","c":"CU"},{"n":"Valdemorillo de la Sierra","p":"Cuenca","c":"CU"},{"n":"Valdemoro-Sierra","p":"Cuenca","c":"CU"},{"n":"Valdetórtola","p":"Cuenca","c":"CU"},{"n":"Valhermoso de la Fuente","p":"Cuenca","c":"CU"},{"n":"Valle de Altomira","p":"Cuenca","c":"CU"},{"n":"Valsalobre","p":"Cuenca","c":"CU"},{"n":"Valverde de Júcar","p":"Cuenca","c":"CU"},{"n":"Valverdejo","p":"Cuenca","c":"CU"},{"n":"Vara de Rey","p":"Cuenca","c":"CU"},{"n":"Vega del Codorno","p":"Cuenca","c":"CU"},{"n":"Villaconejos de Trabaque","p":"Cuenca","c":"CU"},{"n":"Villalba de la Sierra","p":"Cuenca","c":"CU"},{"n":"Villalba del Rey","p":"Cuenca","c":"CU"},{"n":"Villalpardo","p":"Cuenca","c":"CU"},{"n":"Villamayor de Santiago","p":"Cuenca","c":"CU"},{"n":"Villanueva de Guadamejud","p":"Cuenca","c":"CU"},{"n":"Villanueva de la Jara","p":"Cuenca","c":"CU"},{"n":"Villar de Cañas","p":"Cuenca","c":"CU"},{"n":"Villar de Domingo García","p":"Cuenca","c":"CU"},{"n":"Villar de la Encina","p":"Cuenca","c":"CU"},{"n":"Villar de Olalla","p":"Cuenca","c":"CU"},{"n":"Villar del Humo","p":"Cuenca","c":"CU"},{"n":"Villar del Infantado","p":"Cuenca","c":"CU"},{"n":"Villar del Saz de Arcas","p":"Cuenca","c":"CU"},{"n":"Villar del Saz de Navalón","p":"Cuenca","c":"CU"},{"n":"Villares del Saz","p":"Cuenca","c":"CU"},{"n":"Villarejo de Fuentes","p":"Cuenca","c":"CU"},{"n":"Villarejo de la Peñuela","p":"Cuenca","c":"CU"},{"n":"Villarejo Seco","p":"Cuenca","c":"CU"},{"n":"Villarejo-Periesteban","p":"Cuenca","c":"CU"},{"n":"Villarta","p":"Cuenca","c":"CU"},{"n":"Villas de la Ventosa","p":"Cuenca","c":"CU"},{"n":"Villaverde y Pasaconsol","p":"Cuenca","c":"CU"},{"n":"Víllora","p":"Cuenca","c":"CU"},{"n":"Vindel","p":"Cuenca","c":"CU"},{"n":"Yémeda","p":"Cuenca","c":"CU"},{"n":"Zafra de Záncara","p":"Cuenca","c":"CU"},{"n":"Zafrilla","p":"Cuenca","c":"CU"},{"n":"Zarza de Tajo","p":"Cuenca","c":"CU"},{"n":"Zarzuela","p":"Cuenca","c":"CU"},{"n":"Abánades","p":"Guadalajara","c":"GU"},{"n":"Ablanque","p":"Guadalajara","c":"GU"},{"n":"Adobes","p":"Guadalajara","c":"GU"},{"n":"Alaminos","p":"Guadalajara","c":"GU"},{"n":"Alarilla","p":"Guadalajara","c":"GU"},{"n":"Albalate de Zorita","p":"Guadalajara","c":"GU"},{"n":"Albares","p":"Guadalajara","c":"GU"},{"n":"Albendiego","p":"Guadalajara","c":"GU"},{"n":"Alcocer","p":"Guadalajara","c":"GU"},{"n":"Alcolea de las Peñas","p":"Guadalajara","c":"GU"},{"n":"Alcolea del Pinar","p":"Guadalajara","c":"GU"},{"n":"Alcoroches","p":"Guadalajara","c":"GU"},{"n":"Aldeanueva de Guadalajara","p":"Guadalajara","c":"GU"},{"n":"Algar de Mesa","p":"Guadalajara","c":"GU"},{"n":"Algora","p":"Guadalajara","c":"GU"},{"n":"Alhóndiga","p":"Guadalajara","c":"GU"},{"n":"Alique","p":"Guadalajara","c":"GU"},{"n":"Almadrones","p":"Guadalajara","c":"GU"},{"n":"Almiruete","p":"Guadalajara","c":"GU"},{"n":"Almonacid de Zorita","p":"Guadalajara","c":"GU"},{"n":"Alocén","p":"Guadalajara","c":"GU"},{"n":"Alovera","p":"Guadalajara","c":"GU"},{"n":"Alustante","p":"Guadalajara","c":"GU"},{"n":"Angón","p":"Guadalajara","c":"GU"},{"n":"Anguita","p":"Guadalajara","c":"GU"},{"n":"Anquela del Ducado","p":"Guadalajara","c":"GU"},{"n":"Anquela del Pedregal","p":"Guadalajara","c":"GU"},{"n":"Aranzueque","p":"Guadalajara","c":"GU"},{"n":"Arbancón","p":"Guadalajara","c":"GU"},{"n":"Arbeteta","p":"Guadalajara","c":"GU"},{"n":"Argecilla","p":"Guadalajara","c":"GU"},{"n":"Armallones","p":"Guadalajara","c":"GU"},{"n":"Armuña de Tajuña","p":"Guadalajara","c":"GU"},{"n":"Arroyo de las Fraguas","p":"Guadalajara","c":"GU"},{"n":"Atanzón","p":"Guadalajara","c":"GU"},{"n":"Atienza","p":"Guadalajara","c":"GU"},{"n":"Auñón","p":"Guadalajara","c":"GU"},{"n":"Azuqueca de Henares","p":"Guadalajara","c":"GU"},{"n":"Baides","p":"Guadalajara","c":"GU"},{"n":"Baños de Tajo","p":"Guadalajara","c":"GU"},{"n":"Bañuelos","p":"Guadalajara","c":"GU"},{"n":"Barriopedro","p":"Guadalajara","c":"GU"},{"n":"Berninches","p":"Guadalajara","c":"GU"},{"n":"Bodera (La)","p":"Guadalajara","c":"GU"},{"n":"Brihuega","p":"Guadalajara","c":"GU"},{"n":"Budia","p":"Guadalajara","c":"GU"},{"n":"Bujalaro","p":"Guadalajara","c":"GU"},{"n":"Bustares","p":"Guadalajara","c":"GU"},{"n":"Cabanillas del Campo","p":"Guadalajara","c":"GU"},{"n":"Campillo de Dueñas","p":"Guadalajara","c":"GU"},{"n":"Campillo de Ranas","p":"Guadalajara","c":"GU"},{"n":"Campisábalos","p":"Guadalajara","c":"GU"},{"n":"Canredondo","p":"Guadalajara","c":"GU"},{"n":"Cantalojas","p":"Guadalajara","c":"GU"},{"n":"Cañizar","p":"Guadalajara","c":"GU"},{"n":"Casa de Uceda","p":"Guadalajara","c":"GU"},{"n":"Casas de San Galindo","p":"Guadalajara","c":"GU"},{"n":"Castejón de Henares","p":"Guadalajara","c":"GU"},{"n":"Castellar de la Muela","p":"Guadalajara","c":"GU"},{"n":"Castilforte","p":"Guadalajara","c":"GU"},{"n":"Castrejón de la Peña","p":"Guadalajara","c":"GU"},{"n":"Cendejas de Enmedio","p":"Guadalajara","c":"GU"},{"n":"Cendejas de la Torre","p":"Guadalajara","c":"GU"},{"n":"Cendejas del Padrastro","p":"Guadalajara","c":"GU"},{"n":"Cifuentes","p":"Guadalajara","c":"GU"},{"n":"Cincovillas","p":"Guadalajara","c":"GU"},{"n":"Ciruelas","p":"Guadalajara","c":"GU"},{"n":"Ciruelos del Pinar","p":"Guadalajara","c":"GU"},{"n":"Cobeta","p":"Guadalajara","c":"GU"},{"n":"Cogollor","p":"Guadalajara","c":"GU"},{"n":"Cogolludo","p":"Guadalajara","c":"GU"},{"n":"Condemios de Abajo","p":"Guadalajara","c":"GU"},{"n":"Condemios de Arriba","p":"Guadalajara","c":"GU"},{"n":"Congostrina","p":"Guadalajara","c":"GU"},{"n":"Copernal","p":"Guadalajara","c":"GU"},{"n":"Corduente","p":"Guadalajara","c":"GU"},{"n":"Cubillo de Uceda (El)","p":"Guadalajara","c":"GU"},{"n":"Checa","p":"Guadalajara","c":"GU"},{"n":"Chequilla","p":"Guadalajara","c":"GU"},{"n":"Chillarón del Rey","p":"Guadalajara","c":"GU"},{"n":"Chiloeches","p":"Guadalajara","c":"GU"},{"n":"Driebes","p":"Guadalajara","c":"GU"},{"n":"Durón","p":"Guadalajara","c":"GU"},{"n":"Embid","p":"Guadalajara","c":"GU"},{"n":"Escamilla","p":"Guadalajara","c":"GU"},{"n":"Escariche","p":"Guadalajara","c":"GU"},{"n":"Escopete","p":"Guadalajara","c":"GU"},{"n":"Espigares","p":"Guadalajara","c":"GU"},{"n":"Espinosa de Henares","p":"Guadalajara","c":"GU"},{"n":"Esplegares","p":"Guadalajara","c":"GU"},{"n":"Establés","p":"Guadalajara","c":"GU"},{"n":"Estriégana","p":"Guadalajara","c":"GU"},{"n":"Fontanar","p":"Guadalajara","c":"GU"},{"n":"Fuembellida","p":"Guadalajara","c":"GU"},{"n":"Fuencemillán","p":"Guadalajara","c":"GU"},{"n":"Fuentelahiguera de Albatages","p":"Guadalajara","c":"GU"},{"n":"Fuentelencina","p":"Guadalajara","c":"GU"},{"n":"Fuentelsaz","p":"Guadalajara","c":"GU"},{"n":"Fuentelviejo","p":"Guadalajara","c":"GU"},{"n":"Fuentenovilla","p":"Guadalajara","c":"GU"},{"n":"Gajanejos","p":"Guadalajara","c":"GU"},{"n":"Galápagos","p":"Guadalajara","c":"GU"},{"n":"Galve de Sorbe","p":"Guadalajara","c":"GU"},{"n":"Gascueña de Bornova","p":"Guadalajara","c":"GU"},{"n":"Guadalajara","p":"Guadalajara","c":"GU"},{"n":"Henche","p":"Guadalajara","c":"GU"},{"n":"Heras de Ayuso","p":"Guadalajara","c":"GU"},{"n":"Herrería","p":"Guadalajara","c":"GU"},{"n":"Hiendelaencina","p":"Guadalajara","c":"GU"},{"n":"Hijes","p":"Guadalajara","c":"GU"},{"n":"Hita","p":"Guadalajara","c":"GU"},{"n":"Hombrados","p":"Guadalajara","c":"GU"},{"n":"Hontoba","p":"Guadalajara","c":"GU"},{"n":"Horche","p":"Guadalajara","c":"GU"},{"n":"Hortezuela de Océn","p":"Guadalajara","c":"GU"},{"n":"Huertahernando","p":"Guadalajara","c":"GU"},{"n":"Hueva","p":"Guadalajara","c":"GU"},{"n":"Humanes","p":"Guadalajara","c":"GU"},{"n":"Irueste","p":"Guadalajara","c":"GU"},{"n":"Jadraque","p":"Guadalajara","c":"GU"},{"n":"Jirueque","p":"Guadalajara","c":"GU"},{"n":"Laranueva","p":"Guadalajara","c":"GU"},{"n":"Ledanca","p":"Guadalajara","c":"GU"},{"n":"Loranca de Tajuña","p":"Guadalajara","c":"GU"},{"n":"Lupiana","p":"Guadalajara","c":"GU"},{"n":"Luzaga","p":"Guadalajara","c":"GU"},{"n":"Luzón","p":"Guadalajara","c":"GU"},{"n":"Majaelrayo","p":"Guadalajara","c":"GU"},{"n":"Málaga del Fresno","p":"Guadalajara","c":"GU"},{"n":"Malaguilla","p":"Guadalajara","c":"GU"},{"n":"Mandayona","p":"Guadalajara","c":"GU"},{"n":"Mantiel","p":"Guadalajara","c":"GU"},{"n":"Maranchón","p":"Guadalajara","c":"GU"},{"n":"Marchamalo","p":"Guadalajara","c":"GU"},{"n":"Masegoso de Tajuña","p":"Guadalajara","c":"GU"},{"n":"Matarrubia","p":"Guadalajara","c":"GU"},{"n":"Matillas","p":"Guadalajara","c":"GU"},{"n":"Mazarete","p":"Guadalajara","c":"GU"},{"n":"Mazuecos","p":"Guadalajara","c":"GU"},{"n":"Megina","p":"Guadalajara","c":"GU"},{"n":"Membrillera","p":"Guadalajara","c":"GU"},{"n":"Miedes de Atienza","p":"Guadalajara","c":"GU"},{"n":"Mierla (La)","p":"Guadalajara","c":"GU"},{"n":"Milmarcos","p":"Guadalajara","c":"GU"},{"n":"Millana","p":"Guadalajara","c":"GU"},{"n":"Miralrío","p":"Guadalajara","c":"GU"},{"n":"Miñosa (La)","p":"Guadalajara","c":"GU"},{"n":"Molina de Aragón","p":"Guadalajara","c":"GU"},{"n":"Monasterio","p":"Guadalajara","c":"GU"},{"n":"Montarrón","p":"Guadalajara","c":"GU"},{"n":"Moratilla de los Meleros","p":"Guadalajara","c":"GU"},{"n":"Morenilla","p":"Guadalajara","c":"GU"},{"n":"Muduex","p":"Guadalajara","c":"GU"},{"n":"Navas de Jadraque (Las)","p":"Guadalajara","c":"GU"},{"n":"Negredo","p":"Guadalajara","c":"GU"},{"n":"Ocentejo","p":"Guadalajara","c":"GU"},{"n":"Olivar (El)","p":"Guadalajara","c":"GU"},{"n":"Olmeda de Cobeta","p":"Guadalajara","c":"GU"},{"n":"Olmeda de Jadraque (La)","p":"Guadalajara","c":"GU"},{"n":"Ordial (El)","p":"Guadalajara","c":"GU"},{"n":"Orea","p":"Guadalajara","c":"GU"},{"n":"Pálmaces de Jadraque","p":"Guadalajara","c":"GU"},{"n":"Pardos","p":"Guadalajara","c":"GU"},{"n":"Paredes de Sigüenza","p":"Guadalajara","c":"GU"},{"n":"Pareja","p":"Guadalajara","c":"GU"},{"n":"Pastrana","p":"Guadalajara","c":"GU"},{"n":"Pedregal (El)","p":"Guadalajara","c":"GU"},{"n":"Peralejos de las Truchas","p":"Guadalajara","c":"GU"},{"n":"Peralveche","p":"Guadalajara","c":"GU"},{"n":"Pinilla de Jadraque","p":"Guadalajara","c":"GU"},{"n":"Pinilla de Molina","p":"Guadalajara","c":"GU"},{"n":"Pioz","p":"Guadalajara","c":"GU"},{"n":"Piqueras","p":"Guadalajara","c":"GU"},{"n":"Pobo de Dueñas (El)","p":"Guadalajara","c":"GU"},{"n":"Poveda de la Sierra","p":"Guadalajara","c":"GU"},{"n":"Pozancos","p":"Guadalajara","c":"GU"},{"n":"Pozo de Almoguera","p":"Guadalajara","c":"GU"},{"n":"Pozo de Guadalajara","p":"Guadalajara","c":"GU"},{"n":"Prádena de Atienza","p":"Guadalajara","c":"GU"},{"n":"Prados Redondos","p":"Guadalajara","c":"GU"},{"n":"Puebla de Beleña","p":"Guadalajara","c":"GU"},{"n":"Puebla de Valles","p":"Guadalajara","c":"GU"},{"n":"Quer","p":"Guadalajara","c":"GU"},{"n":"Rebollosa de Jadraque","p":"Guadalajara","c":"GU"},{"n":"Recuenco (El)","p":"Guadalajara","c":"GU"},{"n":"Renera","p":"Guadalajara","c":"GU"},{"n":"Retiendas","p":"Guadalajara","c":"GU"},{"n":"Riba de Saelices","p":"Guadalajara","c":"GU"},{"n":"Rillo de Gallo","p":"Guadalajara","c":"GU"},{"n":"Riofrío del Llano","p":"Guadalajara","c":"GU"},{"n":"Robledillo de Mohernando","p":"Guadalajara","c":"GU"},{"n":"Robledo de Corpes","p":"Guadalajara","c":"GU"},{"n":"Romanillos de Atienza","p":"Guadalajara","c":"GU"},{"n":"Romanones","p":"Guadalajara","c":"GU"},{"n":"Rueda de la Sierra","p":"Guadalajara","c":"GU"},{"n":"Sacecorbo","p":"Guadalajara","c":"GU"},{"n":"Saelices de la Sal","p":"Guadalajara","c":"GU"},{"n":"Salmerón","p":"Guadalajara","c":"GU"},{"n":"San Andrés del Congosto","p":"Guadalajara","c":"GU"},{"n":"San Andrés del Rey","p":"Guadalajara","c":"GU"},{"n":"Santiuste","p":"Guadalajara","c":"GU"},{"n":"Saúca","p":"Guadalajara","c":"GU"},{"n":"Sayatón","p":"Guadalajara","c":"GU"},{"n":"Selas","p":"Guadalajara","c":"GU"},{"n":"Semillas","p":"Guadalajara","c":"GU"},{"n":"Setiles","p":"Guadalajara","c":"GU"},{"n":"Sienes","p":"Guadalajara","c":"GU"},{"n":"Sigüenza","p":"Guadalajara","c":"GU"},{"n":"Solanillos del Extremo","p":"Guadalajara","c":"GU"},{"n":"Somolinos","p":"Guadalajara","c":"GU"},{"n":"Sotillo (El)","p":"Guadalajara","c":"GU"},{"n":"Sotodosos","p":"Guadalajara","c":"GU"},{"n":"Tamajón","p":"Guadalajara","c":"GU"},{"n":"Taragudo","p":"Guadalajara","c":"GU"},{"n":"Taravilla","p":"Guadalajara","c":"GU"},{"n":"Tartanedo","p":"Guadalajara","c":"GU"},{"n":"Tendilla","p":"Guadalajara","c":"GU"},{"n":"Terzaga","p":"Guadalajara","c":"GU"},{"n":"Tierzo","p":"Guadalajara","c":"GU"},{"n":"Toba (La)","p":"Guadalajara","c":"GU"},{"n":"Tordelrábano","p":"Guadalajara","c":"GU"},{"n":"Tordellego","p":"Guadalajara","c":"GU"},{"n":"Tordelpalo","p":"Guadalajara","c":"GU"},{"n":"Tordesilos","p":"Guadalajara","c":"GU"},{"n":"Torija","p":"Guadalajara","c":"GU"},{"n":"Torre del Burgo","p":"Guadalajara","c":"GU"},{"n":"Torrecuadrada de Molina","p":"Guadalajara","c":"GU"},{"n":"Torrecuadradilla","p":"Guadalajara","c":"GU"},{"n":"Torrejón del Rey","p":"Guadalajara","c":"GU"},{"n":"Torremocha de Jadraque","p":"Guadalajara","c":"GU"},{"n":"Torremocha del Campo","p":"Guadalajara","c":"GU"},{"n":"Torremocha del Pinar","p":"Guadalajara","c":"GU"},{"n":"Torremochuela","p":"Guadalajara","c":"GU"},{"n":"Torrubia","p":"Guadalajara","c":"GU"},{"n":"Tórtola de Henares","p":"Guadalajara","c":"GU"},{"n":"Tortuera","p":"Guadalajara","c":"GU"},{"n":"Tortuero","p":"Guadalajara","c":"GU"},{"n":"Traíd","p":"Guadalajara","c":"GU"},{"n":"Trijueque","p":"Guadalajara","c":"GU"},{"n":"Trillo","p":"Guadalajara","c":"GU"},{"n":"Uceda","p":"Guadalajara","c":"GU"},{"n":"Ujados","p":"Guadalajara","c":"GU"},{"n":"Utande","p":"Guadalajara","c":"GU"},{"n":"Valdarachas","p":"Guadalajara","c":"GU"},{"n":"Valdearenas","p":"Guadalajara","c":"GU"},{"n":"Valdeavellano","p":"Guadalajara","c":"GU"},{"n":"Valdeaveruelo","p":"Guadalajara","c":"GU"},{"n":"Valdeconcha","p":"Guadalajara","c":"GU"},{"n":"Valdegrudas","p":"Guadalajara","c":"GU"},{"n":"Valdelcubo","p":"Guadalajara","c":"GU"},{"n":"Valdenuño Fernández","p":"Guadalajara","c":"GU"},{"n":"Valdepeñas de la Sierra","p":"Guadalajara","c":"GU"},{"n":"Valderrebollo","p":"Guadalajara","c":"GU"},{"n":"Valdesaz","p":"Guadalajara","c":"GU"},{"n":"Valdesotos","p":"Guadalajara","c":"GU"},{"n":"Valfermoso de Tajuña","p":"Guadalajara","c":"GU"},{"n":"Valfermoso de las Monjas","p":"Guadalajara","c":"GU"},{"n":"Valhermoso","p":"Guadalajara","c":"GU"},{"n":"Valtablado del Río","p":"Guadalajara","c":"GU"},{"n":"Valverde de los Arroyos","p":"Guadalajara","c":"GU"},{"n":"Viana de Jadraque","p":"Guadalajara","c":"GU"},{"n":"Villanueva de Alcorón","p":"Guadalajara","c":"GU"},{"n":"Villanueva de Argecilla","p":"Guadalajara","c":"GU"},{"n":"Villanueva de la Torre","p":"Guadalajara","c":"GU"},{"n":"Villares de Jadraque","p":"Guadalajara","c":"GU"},{"n":"Villaseca de Henares","p":"Guadalajara","c":"GU"},{"n":"Villaseca de Uceda","p":"Guadalajara","c":"GU"},{"n":"Villel de Mesa","p":"Guadalajara","c":"GU"},{"n":"Viñuelas","p":"Guadalajara","c":"GU"},{"n":"Yebes","p":"Guadalajara","c":"GU"},{"n":"Yebra","p":"Guadalajara","c":"GU"},{"n":"Yélamos de Abajo","p":"Guadalajara","c":"GU"},{"n":"Yélamos de Arriba","p":"Guadalajara","c":"GU"},{"n":"Yunquera de Henares","p":"Guadalajara","c":"GU"},{"n":"Yunta (La)","p":"Guadalajara","c":"GU"},{"n":"Zaorejas","p":"Guadalajara","c":"GU"},{"n":"Zarzuela de Jadraque","p":"Guadalajara","c":"GU"},{"n":"Zorita de los Canes","p":"Guadalajara","c":"GU"},{"n":"Ajofrin","p":"Toledo","c":"TO"},{"n":"Alameda de la Sagra","p":"Toledo","c":"TO"},{"n":"Albarreal de Tajo","p":"Toledo","c":"TO"},{"n":"Alcabón","p":"Toledo","c":"TO"},{"n":"Alcaudete de la Jara","p":"Toledo","c":"TO"},{"n":"Alcolea de Tajo","p":"Toledo","c":"TO"},{"n":"Aldeanueva de Barbarroya","p":"Toledo","c":"TO"},{"n":"Aldeanueva de San Bartolomé","p":"Toledo","c":"TO"},{"n":"Almendral de la Cañada","p":"Toledo","c":"TO"},{"n":"Almonacid de Toledo","p":"Toledo","c":"TO"},{"n":"Almorox","p":"Toledo","c":"TO"},{"n":"Añover de Tajo","p":"Toledo","c":"TO"},{"n":"Arcicóllar","p":"Toledo","c":"TO"},{"n":"Argés","p":"Toledo","c":"TO"},{"n":"Azután","p":"Toledo","c":"TO"},{"n":"Barcience","p":"Toledo","c":"TO"},{"n":"Bargas","p":"Toledo","c":"TO"},{"n":"Belvis de la Jara","p":"Toledo","c":"TO"},{"n":"Borox","p":"Toledo","c":"TO"},{"n":"Buenaventura","p":"Toledo","c":"TO"},{"n":"Burguillos de Toledo","p":"Toledo","c":"TO"},{"n":"Burujón","p":"Toledo","c":"TO"},{"n":"Cabañas de la Sagra","p":"Toledo","c":"TO"},{"n":"Cabañas de Yepes","p":"Toledo","c":"TO"},{"n":"Cabezamesada","p":"Toledo","c":"TO"},{"n":"Calera y Chozas","p":"Toledo","c":"TO"},{"n":"Caleruela","p":"Toledo","c":"TO"},{"n":"Calzada de Oropesa","p":"Toledo","c":"TO"},{"n":"Camarena","p":"Toledo","c":"TO"},{"n":"Camarenilla","p":"Toledo","c":"TO"},{"n":"Campillo de la Jara","p":"Toledo","c":"TO"},{"n":"Cardiel de los Montes","p":"Toledo","c":"TO"},{"n":"Carmena","p":"Toledo","c":"TO"},{"n":"Carpio de Tajo (El)","p":"Toledo","c":"TO"},{"n":"Carriches","p":"Toledo","c":"TO"},{"n":"Casarrubios del Monte","p":"Toledo","c":"TO"},{"n":"Casasbuenas","p":"Toledo","c":"TO"},{"n":"Castillo de Bayuela","p":"Toledo","c":"TO"},{"n":"Cazalegas","p":"Toledo","c":"TO"},{"n":"Cebolla","p":"Toledo","c":"TO"},{"n":"Cedillo del Condado","p":"Toledo","c":"TO"},{"n":"Cerralbos (Los)","p":"Toledo","c":"TO"},{"n":"Chozas de Canales","p":"Toledo","c":"TO"},{"n":"Ciruelos","p":"Toledo","c":"TO"},{"n":"Cobeja","p":"Toledo","c":"TO"},{"n":"Cobisa","p":"Toledo","c":"TO"},{"n":"Consuegra","p":"Toledo","c":"TO"},{"n":"Corral de Almaguer","p":"Toledo","c":"TO"},{"n":"Cuerva","p":"Toledo","c":"TO"},{"n":"Dosbarrios","p":"Toledo","c":"TO"},{"n":"Erustes","p":"Toledo","c":"TO"},{"n":"Escalona","p":"Toledo","c":"TO"},{"n":"Escalonilla","p":"Toledo","c":"TO"},{"n":"Espinoso del Rey","p":"Toledo","c":"TO"},{"n":"Esquivias","p":"Toledo","c":"TO"},{"n":"Fuensalida","p":"Toledo","c":"TO"},{"n":"Gálvez","p":"Toledo","c":"TO"},{"n":"Garciotum","p":"Toledo","c":"TO"},{"n":"Gerindote","p":"Toledo","c":"TO"},{"n":"Guadamur","p":"Toledo","c":"TO"},{"n":"Guardia (La)","p":"Toledo","c":"TO"},{"n":"Herencias (Las)","p":"Toledo","c":"TO"},{"n":"Herreruela de Oropesa","p":"Toledo","c":"TO"},{"n":"Hinojosa de San Vicente","p":"Toledo","c":"TO"},{"n":"Hormigos","p":"Toledo","c":"TO"},{"n":"Huecas","p":"Toledo","c":"TO"},{"n":"Huerta de Valdecarábanos","p":"Toledo","c":"TO"},{"n":"Iglesuela (La)","p":"Toledo","c":"TO"},{"n":"Illán de Vacas","p":"Toledo","c":"TO"},{"n":"Illescas","p":"Toledo","c":"TO"},{"n":"Lagartera","p":"Toledo","c":"TO"},{"n":"Layos","p":"Toledo","c":"TO"},{"n":"Lillo","p":"Toledo","c":"TO"},{"n":"Lominchar","p":"Toledo","c":"TO"},{"n":"Lucillos","p":"Toledo","c":"TO"},{"n":"Madridejos","p":"Toledo","c":"TO"},{"n":"Malpica de Tajo","p":"Toledo","c":"TO"},{"n":"Maqueda","p":"Toledo","c":"TO"},{"n":"Marjaliza","p":"Toledo","c":"TO"},{"n":"Marrupe","p":"Toledo","c":"TO"},{"n":"Mascaraque","p":"Toledo","c":"TO"},{"n":"Mata (La)","p":"Toledo","c":"TO"},{"n":"Mazarambroz","p":"Toledo","c":"TO"},{"n":"Menasalbas","p":"Toledo","c":"TO"},{"n":"Méntrida","p":"Toledo","c":"TO"},{"n":"Mesegar de Tajo","p":"Toledo","c":"TO"},{"n":"Miguel Esteban","p":"Toledo","c":"TO"},{"n":"Mocejón","p":"Toledo","c":"TO"},{"n":"Mohedas de la Jara","p":"Toledo","c":"TO"},{"n":"Montesclaros","p":"Toledo","c":"TO"},{"n":"Mora","p":"Toledo","c":"TO"},{"n":"Nambroca","p":"Toledo","c":"TO"},{"n":"Navalcán","p":"Toledo","c":"TO"},{"n":"Navalmoralejo","p":"Toledo","c":"TO"},{"n":"Navalmoral de Toledo","p":"Toledo","c":"TO"},{"n":"Navalucillos (Los)","p":"Toledo","c":"TO"},{"n":"Navamorcuende","p":"Toledo","c":"TO"},{"n":"Noblejas","p":"Toledo","c":"TO"},{"n":"Noez","p":"Toledo","c":"TO"},{"n":"Nombela","p":"Toledo","c":"TO"},{"n":"Noves","p":"Toledo","c":"TO"},{"n":"Numancia de la Sagra","p":"Toledo","c":"TO"},{"n":"Ocaña","p":"Toledo","c":"TO"},{"n":"Olías del Rey","p":"Toledo","c":"TO"},{"n":"Ontígola","p":"Toledo","c":"TO"},{"n":"Orgaz","p":"Toledo","c":"TO"},{"n":"Oropesa","p":"Toledo","c":"TO"},{"n":"Otero","p":"Toledo","c":"TO"},{"n":"Palomeque","p":"Toledo","c":"TO"},{"n":"Pantoja","p":"Toledo","c":"TO"},{"n":"Paredes de Escalona","p":"Toledo","c":"TO"},{"n":"Pelahustán","p":"Toledo","c":"TO"},{"n":"Pepino","p":"Toledo","c":"TO"},{"n":"Polán","p":"Toledo","c":"TO"},{"n":"Portillo de Toledo","p":"Toledo","c":"TO"},{"n":"Puebla de Almoradiel","p":"Toledo","c":"TO"},{"n":"Puebla de Montalbán (La)","p":"Toledo","c":"TO"},{"n":"Puebla Nueva (La)","p":"Toledo","c":"TO"},{"n":"Pulgar","p":"Toledo","c":"TO"},{"n":"Quero","p":"Toledo","c":"TO"},{"n":"Quintanar de la Orden","p":"Toledo","c":"TO"},{"n":"Real de San Vicente","p":"Toledo","c":"TO"},{"n":"Recas","p":"Toledo","c":"TO"},{"n":"Retamoso de la Jara","p":"Toledo","c":"TO"},{"n":"Rielves","p":"Toledo","c":"TO"},{"n":"Robledo del Mazo","p":"Toledo","c":"TO"},{"n":"Romeral (El)","p":"Toledo","c":"TO"},{"n":"San Bartolomé de las Abiertas","p":"Toledo","c":"TO"},{"n":"San Martín de Montalbán","p":"Toledo","c":"TO"},{"n":"San Martín de Pusa","p":"Toledo","c":"TO"},{"n":"San Pablo de los Montes","p":"Toledo","c":"TO"},{"n":"San Román de los Montes","p":"Toledo","c":"TO"},{"n":"Santa Ana de Pusa","p":"Toledo","c":"TO"},{"n":"Santa Cruz de la Zarza","p":"Toledo","c":"TO"},{"n":"Santa Cruz del Retamar","p":"Toledo","c":"TO"},{"n":"Santa Olalla","p":"Toledo","c":"TO"},{"n":"Santo Domingo-Caudilla","p":"Toledo","c":"TO"},{"n":"Sartajada","p":"Toledo","c":"TO"},{"n":"Segurilla","p":"Toledo","c":"TO"},{"n":"Seseña","p":"Toledo","c":"TO"},{"n":"Sevilleja de la Jara","p":"Toledo","c":"TO"},{"n":"Sonseca","p":"Toledo","c":"TO"},{"n":"Sotillo de las Palomas","p":"Toledo","c":"TO"},{"n":"Talavera de la Reina","p":"Toledo","c":"TO"},{"n":"Tembleque","p":"Toledo","c":"TO"},{"n":"Toledo","p":"Toledo","c":"TO"},{"n":"Torrecilla de la Jara","p":"Toledo","c":"TO"},{"n":"Torrijos","p":"Toledo","c":"TO"},{"n":"Totanés","p":"Toledo","c":"TO"},{"n":"Turleque","p":"Toledo","c":"TO"},{"n":"Ugena","p":"Toledo","c":"TO"},{"n":"Urda","p":"Toledo","c":"TO"},{"n":"Valdeverdeja","p":"Toledo","c":"TO"},{"n":"Valmojado","p":"Toledo","c":"TO"},{"n":"Velada","p":"Toledo","c":"TO"},{"n":"Ventas con Peña Aguilera","p":"Toledo","c":"TO"},{"n":"Ventas de Retamosa (Las)","p":"Toledo","c":"TO"},{"n":"Villacañas","p":"Toledo","c":"TO"},{"n":"Villa de Don Fadrique","p":"Toledo","c":"TO"},{"n":"Villafranca de los Caballeros","p":"Toledo","c":"TO"},{"n":"Villaluenga de la Sagra","p":"Toledo","c":"TO"},{"n":"Villasequilla","p":"Toledo","c":"TO"},{"n":"Villatobas","p":"Toledo","c":"TO"},{"n":"Villanueva de Bogas","p":"Toledo","c":"TO"},{"n":"Yeles","p":"Toledo","c":"TO"},{"n":"Yepes","p":"Toledo","c":"TO"},{"n":"Yuncler","p":"Toledo","c":"TO"},{"n":"Yunclillos","p":"Toledo","c":"TO"},{"n":"Yuncos","p":"Toledo","c":"TO"}];
+const PROV_TOTALS = {AB:83,CR:94,CU:210,GU:278,TO:169};
+const PROV_CODE = {'Albacete':'AB','Ciudad Real':'CR','Cuenca':'CU','Guadalajara':'GU','Toledo':'TO'};
+const PROV_COLOR = {AB:'--ab',CR:'--cr',CU:'--cu',GU:'--gu',TO:'--to'};
+const CLM_PREFIXES = ['02','13','16','19','45'];
+const TOTAL = MUNICIPALITIES.length;
+const LB_KEY = 'los834_lb';
+const STATS_KEY = 'los834_muni_stats';
+
+let selectedSecs = 900, secondsLeft = 900, timerInterval = null;
+let started = false, gameOver = false;
+let foundSet = new Set(), provFound = {AB:0,CR:0,CU:0,GU:0,TO:0};
+let playerName = '', isUnlimited = false, elapsedSecs = 0, elapsedInterval = null;
+let lastScore = 0;
+
+// Normalize
+function norm(s){
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[\u2018\u2019\']/g,'').replace(/\s+/g,' ').trim();
+}
+const normMap = {};
+MUNICIPALITIES.forEach(m => { normMap[norm(m.n)] = m; });
+
+document.getElementById('stat-total').textContent = TOTAL;
+renderLeaderboard(null);
+renderMuniStats();
+
+function selectTime(btn){
+  document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedSecs = parseInt(btn.dataset.secs);
+}
+
+function startGame(){
+  playerName = document.getElementById('player-name').value.trim() || 'Anónimo';
+  isUnlimited = selectedSecs === 0;
+  secondsLeft = selectedSecs; elapsedSecs = 0;
+  document.getElementById('start-overlay').classList.remove('active');
+  started = true; gameOver = false;
+  foundSet.clear();
+  provFound = {AB:0,CR:0,CU:0,GU:0,TO:0};
+  updateProvBars();
+  document.getElementById('found-tags').innerHTML = '';
+  document.getElementById('stat-found').textContent = '0';
+  setFeedback('','');
+  if(isUnlimited){
+    document.getElementById('stat-time').textContent = '0:00';
+    elapsedInterval = setInterval(()=>{
+      elapsedSecs++;
+      const m=Math.floor(elapsedSecs/60),s=elapsedSecs%60;
+      document.getElementById('stat-time').textContent = m+':'+String(s).padStart(2,'0');
+    },1000);
+  } else {
+    updateTimerDisplay();
+    timerInterval = setInterval(tick,1000);
+  }
+  document.getElementById('muni-input').disabled = false;
+  document.getElementById('muni-input').focus();
+}
+
+function tick(){
+  secondsLeft--;
+  updateTimerDisplay();
+  if(secondsLeft<=0) endGame(false);
+}
+
+function updateTimerDisplay(){
+  if(isUnlimited) return;
+  const m=Math.floor(secondsLeft/60),s=secondsLeft%60;
+  const el=document.getElementById('stat-time');
+  el.textContent = m+':'+String(s).padStart(2,'0');
+  el.className = 'stat-value'+(secondsLeft<=60?' urgent':'');
+}
+
+function giveUp(){ if(started&&!gameOver) endGame(true); }
+
+function endGame(voluntary){
+  clearInterval(timerInterval); clearInterval(elapsedInterval);
+  gameOver=true; started=false;
+  document.getElementById('muni-input').disabled=true;
+  const elapsed = isUnlimited ? elapsedSecs : (selectedSecs-secondsLeft);
+  lastScore = foundSet.size;
+  saveScore(lastScore, elapsed, selectedSecs, [...foundSet]);
+  showEndScreen(voluntary, elapsed);
+  renderLeaderboard(lastScore);
+  renderMuniStats();
+}
+
+function closeEnd(){
+  document.getElementById('end-overlay').classList.remove('active');
+  // scroll to bottom sections
+  document.getElementById('bottom-sections').scrollIntoView({behavior:'smooth'});
+}
+
+function restartGame(){
+  document.getElementById('end-overlay').classList.remove('active');
+  resetMapColors();
+  document.getElementById('start-overlay').classList.add('active');
+}
+
+function showMissed(){
+  document.getElementById('end-overlay').classList.remove('active');
+  const tags = document.getElementById('found-tags');
+  tags.innerHTML = '';
+  MUNICIPALITIES.filter(m=>!foundSet.has(norm(m.n))).forEach(m=>{
+    const span=document.createElement('span');
+    span.className='found-tag';
+    span.style.background='#FAEBE8'; span.style.color='var(--danger)';
+    span.textContent=m.n; tags.appendChild(span);
+  });
+  document.getElementById('bottom-sections').scrollIntoView({behavior:'smooth'});
+}
+
+// INPUT
+document.getElementById('muni-input').addEventListener('input',function(){
+  if(!started||gameOver) return;
+  const nk=norm(this.value);
+  if(!nk||nk.length<2){ setFeedback('',''); return; }
+  if(normMap[nk]&&!foundSet.has(nk)){
+    const muni=normMap[nk];
+    foundSet.add(nk);
+    this.value='';
+    const pc=PROV_CODE[muni.p]||'AB';
+    provFound[pc]=(provFound[pc]||0)+1;
+    document.getElementById('stat-found').textContent=foundSet.size;
+    setFeedback('✓ '+muni.n+' ('+muni.p+')','ok');
+    updateProvBars();
+    addFoundTag(muni.n);
+    highlightOnMap(nk);
+  }
+});
+document.getElementById('player-name').addEventListener('keydown',e=>{ if(e.key==='Enter') startGame(); });
+
+function setFeedback(msg,cls){
+  const el=document.getElementById('feedback');
+  el.textContent=msg; el.className='feedback'+(cls?' '+cls:'');
+}
+function updateProvBars(){
+  ['AB','CR','CU','GU','TO'].forEach(pc=>{
+    const f=provFound[pc]||0,t=PROV_TOTALS[pc];
+    document.getElementById('bar-'+pc.toLowerCase()).style.width=(f/t*100)+'%';
+    document.getElementById('cnt-'+pc.toLowerCase()).textContent=f;
+  });
+}
+function addFoundTag(name){
+  const tags=document.getElementById('found-tags');
+  const span=document.createElement('span');
+  span.className='found-tag'; span.textContent=name;
+  tags.prepend(span);
+  if(tags.children.length>60) tags.removeChild(tags.lastChild);
+}
+
+// END SCREEN
+function showEndScreen(voluntary,elapsed){
+  const n=foundSet.size, pct=Math.round(n/TOTAL*100);
+  let emoji='🏰',title=voluntary?'¡Hasta aquí llegaste!':'¡Se acabó el tiempo!';
+  if(n===TOTAL){emoji='🏆';title='¡Perfecto! ¡Los 834!';}
+  else if(pct>=80) emoji='🥇';
+  else if(pct>=50) emoji='🏅';
+  else if(pct>=25) emoji='⭐';
+  else if(pct>=10) emoji='🗺️';
+  document.getElementById('end-emoji').textContent=emoji;
+  document.getElementById('end-title').textContent=title;
+  document.getElementById('end-score').textContent=n;
+  document.getElementById('end-subtitle').textContent=`de ${TOTAL} (${pct}%) · ${escH(playerName)} · ${fmtT(elapsed)}`;
+  const bd=document.getElementById('end-breakdown');
+  bd.innerHTML='';
+  [['Albacete','AB'],['Ciudad Real','CR'],['Cuenca','CU'],['Guadalajara','GU'],['Toledo','TO']]
+    .forEach(([name,code])=>{
+      const f=provFound[code]||0,t=PROV_TOTALS[code];
+      bd.innerHTML+=`<div class="end-prov-row">
+        <div class="prov-dot" style="background:var(${PROV_COLOR[code]})"></div>
+        <div class="end-prov-name">${name}</div>
+        <div class="end-prov-stat">${f}/${t} (${Math.round(f/t*100)}%)</div>
+      </div>`;
+    });
+  document.getElementById('end-overlay').classList.add('active');
+}
+
+// LEADERBOARD
+function getLeaderboard(){ try{ return JSON.parse(localStorage.getItem(LB_KEY)||'[]'); }catch(e){return[];} }
+
+function saveScore(score,elapsed,timeSetting,foundNorms){
+  let lb=getLeaderboard();
+  lb.push({
+    name:playerName, score, elapsed,
+    timeSetting, pct:Math.round(score/TOTAL*100),
+    date:new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'2-digit'})
+  });
+  lb.sort((a,b)=>b.score-a.score||a.elapsed-b.elapsed);
+  lb=lb.slice(0,50);
+  try{ localStorage.setItem(LB_KEY,JSON.stringify(lb)); }catch(e){}
+
+  // save muni stats
+  saveMuniStats(foundNorms);
+}
+
+function renderLeaderboard(currentScore){
+  const lb=getLeaderboard();
+  const el=document.getElementById('lb-content');
+  if(!lb.length){
+    el.innerHTML='<div class="lb-empty">Aún no hay puntuaciones.<br>¡Juega para aparecer aquí!</div>';
+    return;
+  }
+  const medals=['🥇','🥈','🥉'];
+  const rankCls=['gold','silver','bronze'];
+  let rows='';
+  lb.forEach((e,i)=>{
+    const isMe=currentScore!==null&&e.score===currentScore&&e.name===playerName;
+    const tLabel=e.timeSetting===0?'∞':(e.timeSetting/60)+'min';
+    rows+=`<tr class="${isMe?'me':''}">
+      <td class="lb-rank ${rankCls[i]||''}">${i<3?medals[i]:i+1}</td>
+      <td class="lb-name">${escH(e.name)}</td>
+      <td class="lb-score-cell">${e.score}</td>
+      <td class="lb-pct">${e.pct}%</td>
+      <td class="lb-time-cell">${fmtT(e.elapsed)} / ${tLabel}</td>
+    </tr>`;
+  });
+  el.innerHTML=`<table class="lb-table">
+    <thead><tr><th>#</th><th>Nombre</th><th>Score</th><th>%</th><th>Tiempo</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function clearLeaderboard(){
+  if(confirm('¿Borrar todo el ranking?')){
+    try{ localStorage.removeItem(LB_KEY); }catch(e){}
+    renderLeaderboard(null);
+  }
+}
+
+// MUNICIPALITY STATS
+function getMuniStats(){ try{ return JSON.parse(localStorage.getItem(STATS_KEY)||'{}'); }catch(e){return{};} }
+
+function saveMuniStats(foundNorms){
+  const stats=getMuniStats();
+  foundNorms.forEach(nk=>{
+    stats[nk]=(stats[nk]||0)+1;
+  });
+  // also track total games
+  stats.__games=(stats.__games||0)+1;
+  try{ localStorage.setItem(STATS_KEY,JSON.stringify(stats)); }catch(e){}
+}
+
+function renderMuniStats(){
+  const stats=getMuniStats();
+  const el=document.getElementById('muni-stats-content');
+  const totalGames=stats.__games||0;
+  document.getElementById('stats-sessions').textContent=totalGames?totalGames+' partidas':'';
+
+  // build sorted list excluding __games
+  const entries=Object.entries(stats)
+    .filter(([k])=>k!=='__games')
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,15);
+
+  if(!entries.length){
+    el.innerHTML='<div class="lb-empty">Juega para ver las estadísticas</div>';
+    return;
+  }
+
+  const maxCount=entries[0][1];
+  let rows='';
+  entries.forEach(([nk,count],i)=>{
+    const muni=normMap[nk];
+    if(!muni) return;
+    const pct=Math.round(count/Math.max(totalGames,1)*100);
+    const barW=Math.round(count/maxCount*100);
+    const provColor=PROV_COLOR[PROV_CODE[muni.p]]||'--cu';
+    rows+=`<div class="muni-stat-row">
+      <div class="muni-stat-rank">${i+1}</div>
+      <div class="muni-stat-name">${escH(muni.n)}</div>
+      <div class="muni-stat-bar-wrap"><div class="muni-stat-bar" style="width:${barW}%;background:var(${provColor})"></div></div>
+      <div class="muni-stat-count">${count}</div>
+      <div class="muni-stat-prov" style="color:var(${provColor})">${muni.c}</div>
+    </div>`;
+  });
+  el.innerHTML=`<div class="muni-stat-list">${rows}</div>`;
+}
+
+// UTILS
+function fmtT(s){ if(!s&&s!==0) return ''; const m=Math.floor(s/60),sec=s%60; return m+':'+String(sec).padStart(2,'0'); }
+function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// MAP
+let muniPaths={}, mapLoaded=false;
+
+async function loadMap(){
+  const urls=['https://unpkg.com/es-atlas@0.6.0/es/municipalities.json','https://cdn.jsdelivr.net/npm/es-atlas@0.6.0/es/municipalities.json'];
+  for(const url of urls){
+    try{
+      const res=await fetch(url);
+      if(!res.ok) continue;
+      renderMap(await res.json()); return;
+    }catch(e){}
+  }
+  document.getElementById('map-loading').textContent='Mapa no disponible (comprueba tu conexión)';
+}
+
+function renderMap(topo){
+  const svg=document.getElementById('clm-map');
+  document.getElementById('map-loading').style.display='none';
+  svg.style.display='block';
+  const provColors={'02':'--province-ab','13':'--province-cr','16':'--province-cu','19':'--province-gu','45':'--province-to'};
+  const provFColors={'02':'--province-ab-found','13':'--province-cr-found','16':'--province-cu-found','19':'--province-gu-found','45':'--province-to-found'};
+  const geo=topojson.feature(topo,topo.objects.municipalities);
+  const provinces=topojson.feature(topo,topo.objects.provinces);
+  const clmFeats=geo.features.filter(f=>{ const id=String(f.id||''); return CLM_PREFIXES.some(p=>id.startsWith(p)); });
+  const W=600,H=400;
+  const proj=d3.geoMercator().fitSize([W,H],{type:'FeatureCollection',features:clmFeats});
+  const pathGen=d3.geoPath().projection(proj);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  clmFeats.forEach(f=>{
+    const id=String(f.id||''); const prefix=id.substring(0,2);
+    const cv=provColors[prefix]||'--province-gu';
+    const fv=provFColors[prefix]||'--province-gu-found';
+    const name=f.properties.name||f.properties.NAME||'';
+    const nk=norm(name);
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',pathGen(f));
+    path.setAttribute('fill',`var(${cv})`);
+    path.setAttribute('stroke','white');
+    path.setAttribute('stroke-width','0.4');
+    path.dataset.nk=nk; path.dataset.foundColor=`var(${fv})`;
+    path.style.transition='fill .4s';
+    const title=document.createElementNS('http://www.w3.org/2000/svg','title');
+    title.textContent=name; path.appendChild(title);
+    g.appendChild(path);
+    if(nk){ if(!muniPaths[nk]) muniPaths[nk]=[]; muniPaths[nk].push(path); }
+  });
+  svg.appendChild(g);
+  const clmProv=(provinces||{features:[]}).features.filter(f=>CLM_PREFIXES.includes(String(f.id||'')));
+  if(clmProv.length){
+    const gp=document.createElementNS('http://www.w3.org/2000/svg','g');
+    clmProv.forEach(f=>{
+      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d',pathGen(f)); p.setAttribute('fill','none');
+      p.setAttribute('stroke','rgba(0,0,0,0.2)'); p.setAttribute('stroke-width','1.2');
+      p.setAttribute('pointer-events','none'); gp.appendChild(p);
+    });
+    svg.appendChild(gp);
+  }
+  mapLoaded=true;
+}
+
+function highlightOnMap(nk){ if(!mapLoaded) return; (muniPaths[nk]||[]).forEach(p=>p.setAttribute('fill',p.dataset.foundColor||'var(--found)')); }
+
+function resetMapColors(){
+  document.querySelectorAll('#clm-map path[data-nk]').forEach(p=>{
+    const id=String((p.dataset.nk||'').substring(0,2));
+    const provColors={'02':'--province-ab','13':'--province-cr','16':'--province-cu','19':'--province-gu','45':'--province-to'};
+    // reset to original province color stored in dataset
+    p.setAttribute('fill', p.dataset.origColor || p.getAttribute('fill'));
+  });
+  muniPaths={};
+  // reload map
+  document.getElementById('clm-map').innerHTML='';
+  document.getElementById('clm-map').style.display='none';
+  document.getElementById('map-loading').style.display='';
+  document.getElementById('map-loading').textContent='Cargando el mapa…';
+  loadMap();
+}
+
+loadMap();
+</script>
+</body>
+</html>
